@@ -4,3 +4,4 @@ chroma_db/
 .vscode/
 *_backup*
 *.pdf
+.env
