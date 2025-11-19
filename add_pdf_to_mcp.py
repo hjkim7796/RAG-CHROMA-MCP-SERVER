@@ -158,10 +158,15 @@ def read_pdf_pypdf2(pdf_path):
         print(f"📖 Reading PDF with PyPDF2: {len(reader.pages)} pages")
         
         for i, page in enumerate(reader.pages, 1):
-            page_text = page.extract_text()
-            text += f"\n\n[Page {i}]\n{page_text}"
+            try:
+                page_text = page.extract_text()
+                if page_text and page_text.strip():
+                    text += f"\n\n[Page {i}]\n{page_text}"
+            except Exception as page_error:
+                print(f"⚠️  Warning: Could not read page {i}: {page_error}")
+                continue
         
-        return text.strip()
+        return text.strip() if text.strip() else None
     
     except Exception as e:
         print(f"❌ PyPDF2 error: {e}")
@@ -180,14 +185,47 @@ def read_pdf_pdfplumber(pdf_path):
             print(f"📖 Reading PDF with pdfplumber: {len(pdf.pages)} pages")
             
             for i, page in enumerate(pdf.pages, 1):
-                page_text = page.extract_text()
-                if page_text:
-                    text += f"\n\n[Page {i}]\n{page_text}"
+                try:
+                    page_text = page.extract_text()
+                    if page_text and page_text.strip():
+                        text += f"\n\n[Page {i}]\n{page_text}"
+                except Exception as page_error:
+                    print(f"⚠️  Warning: Could not read page {i}: {page_error}")
+                    continue
             
-            return text.strip()
+            return text.strip() if text.strip() else None
     
     except Exception as e:
         print(f"❌ pdfplumber error: {e}")
+        return None
+
+
+def read_pdf_pymupdf(pdf_path):
+    """PyMuPDF(fitz)로 PDF 읽기 - 가장 강력함"""
+    try:
+        import fitz  # PyMuPDF
+        
+        doc = fitz.open(pdf_path)
+        text = ""
+        
+        print(f"📖 Reading PDF with PyMuPDF: {len(doc)} pages")
+        
+        for i, page in enumerate(doc, 1):
+            try:
+                page_text = page.get_text()
+                if page_text and page_text.strip():
+                    text += f"\n\n[Page {i}]\n{page_text}"
+            except Exception as page_error:
+                print(f"⚠️  Warning: Could not read page {i}: {page_error}")
+                continue
+        
+        doc.close()
+        return text.strip() if text.strip() else None
+    
+    except ImportError:
+        return None
+    except Exception as e:
+        print(f"❌ PyMuPDF error: {e}")
         return None
 
 
@@ -202,18 +240,38 @@ def read_pdf(pdf_path):
     print(f"\n📄 Reading PDF: {pdf_path.name}")
     print(f"   Size: {pdf_path.stat().st_size / 1024:.2f} KB")
     
-    # pdfplumber 먼저 시도 (더 정확함)
-    text = read_pdf_pdfplumber(pdf_path)
+    text = None
+    methods_tried = []
     
-    # 실패하면 PyPDF2 시도
+    # 방법 1: PyMuPDF (가장 강력하고 빠름)
+    print("\n🔄 Trying PyMuPDF (fitz)...")
+    text = read_pdf_pymupdf(pdf_path)
+    methods_tried.append("PyMuPDF")
+    
+    # 방법 2: pdfplumber (정확하지만 느림)
     if not text:
+        print("\n🔄 Trying pdfplumber...")
+        text = read_pdf_pdfplumber(pdf_path)
+        methods_tried.append("pdfplumber")
+    
+    # 방법 3: PyPDF2 (기본)
+    if not text:
+        print("\n🔄 Trying PyPDF2...")
         text = read_pdf_pypdf2(pdf_path)
+        methods_tried.append("PyPDF2")
     
     if text:
-        print(f"✅ Extracted {len(text)} characters")
-        print(f"   Preview: {text[:200]}...")
+        print(f"\n✅ Successfully extracted text using one of: {', '.join(methods_tried)}")
+        print(f"   Extracted {len(text)} characters")
+        print(f"   Preview: {text[:200].replace(chr(10), ' ')}...")
     else:
-        print("❌ Failed to extract text from PDF")
+        print(f"\n❌ Failed to extract text from PDF")
+        print(f"   Tried: {', '.join(methods_tried)}")
+        print("\n💡 Suggestions:")
+        print("   1. Install PyMuPDF (most robust): pip install PyMuPDF")
+        print("   2. Install pdfplumber: pip install pdfplumber")
+        print("   3. Check if PDF is password protected")
+        print("   4. Check if PDF contains only images (needs OCR)")
     
     return text
 
