@@ -7,18 +7,13 @@ HTTP 통신을 지원하는 RAG MCP 서버입니다. FastAPI와 Server-Sent Even
 ### 1. 패키지 설치
 
 ```bash
-pip install -r requirements_http.txt
+pip install -r requirements.txt
 ```
 
 ### 2. 환경 변수 설정
-
-```bash
-# Linux/Mac
-export ANTHROPIC_API_KEY="your-api-key-here"
-
-# Windows
-set ANTHROPIC_API_KEY=your-api-key-here
-```
+# 만약 rag_query tool을 사용하지 않을 경우에는 KEY를 설정하지 않아도 된다.
+.env 파일을 생성한 후 아래와 같이 추가
+ANTHROPIC_API_KEY=your-api-key-here
 
 ### 3. 서버 실행
 
@@ -36,6 +31,8 @@ python rag_mcp_http_server.py
 - `GET /health` - 헬스 체크
 - `GET /tools` - 사용 가능한 도구 목록
 - `POST /sse` - SSE 엔드포인트 (MCP 프로토콜)
+
+API Document `http://0.0.0.0:8000/docs`에서 실행됩니다.
 
 ### SSE Endpoint Usage
 
@@ -70,13 +67,9 @@ POST /sse
 
 ## 🔧 Claude Desktop 연동
 
-### 방법 1: HTTP Transport (권장)
+### 방법 1: 프록시 사용
 
-Claude Desktop의 설정 파일에 HTTP 엔드포인트를 추가합니다.
-
-**파일 위치:**
-- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+로컬 프록시를 통해 HTTP를 stdio로 변환할 수도 있습니다.
 
 **설정 내용:**
 
@@ -84,25 +77,10 @@ Claude Desktop의 설정 파일에 HTTP 엔드포인트를 추가합니다.
 {
   "mcpServers": {
     "rag-search": {
-      "url": "http://localhost:8000/sse",
-      "transport": "http"
-    }
-  }
-}
-```
-
-### 방법 2: 프록시 사용
-
-로컬 프록시를 통해 HTTP를 stdio로 변환할 수도 있습니다.
-
-```json
-{
-  "mcpServers": {
-    "rag-search": {
-      "command": "npx",
+      "command": "[your-base-project]\\RAG-CHROMA-MCP-SERVER\\.venv\\Scripts\\python",
       "args": [
-        "@anthropic/mcp-proxy",
-        "http://localhost:8000/sse"
+        "[your-base-project]\\RAG-CHROMA-MCP-SERVER\\mcp-http-proxy.py",
+          "http://localhost:8000/sse"
       ]
     }
   }
@@ -131,6 +109,7 @@ curl -X POST http://localhost:8000/sse \
   }'
 ```
 
+### Python으로 테스트
 ### Python으로 테스트
 
 ```python
