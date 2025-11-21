@@ -1,26 +1,91 @@
 #!/usr/bin/env python3
 """
-PDF 파일을 RAG MCP 서버에 추가하는 클라이언트
+PDF 파일을 RAG MCP 서버에 추가하는 클라이언트 (강화 버전)
+- 이미지 OCR 지원
+- 테이블 추출
+- 복잡한 PDF 처리
 """
 
 import requests
 import json
 from pathlib import Path
+import sys
 
-# PyPDF2로 PDF 읽기 (설치 필요: pip install PyPDF2)
+# PDF 라이브러리 확인
+PDF_LIBRARIES = {
+    'pymupdf': False,
+    'pdfplumber': False,
+    'pypdf2': False,
+    'pytesseract': False,
+    'pdf2image': False
+}
+
+# PyMuPDF (가장 강력)
 try:
-    from PyPDF2 import PdfReader
-    HAS_PYPDF2 = True
+    import fitz  # PyMuPDF
+    PDF_LIBRARIES['pymupdf'] = True
 except ImportError:
-    HAS_PYPDF2 = False
-    print("⚠️  PyPDF2가 설치되지 않았습니다. pip install PyPDF2")
+    pass
 
-# pdfplumber로 PDF 읽기 (대안, 설치 필요: pip install pdfplumber)
+# pdfplumber (테이블 추출 우수)
 try:
     import pdfplumber
-    HAS_PDFPLUMBER = True
+    PDF_LIBRARIES['pdfplumber'] = True
 except ImportError:
-    HAS_PDFPLUMBER = False
+    pass
+
+# PyPDF2
+try:
+    from PyPDF2 import PdfReader
+    PDF_LIBRARIES['pypdf2'] = True
+except ImportError:
+    pass
+
+# OCR 라이브러리
+try:
+    import pytesseract
+    from PIL import Image
+    PDF_LIBRARIES['pytesseract'] = True
+except ImportError:
+    pass
+
+try:
+    from pdf2image import convert_from_path
+    PDF_LIBRARIES['pdf2image'] = True
+except ImportError:
+    pass
+
+
+def check_dependencies():
+    """의존성 확인 및 권장사항 출력"""
+    print("\n📦 Checking PDF processing libraries...")
+    
+    installed = []
+    missing = []
+    
+    for lib, available in PDF_LIBRARIES.items():
+        if available:
+            installed.append(lib)
+            print(f"   ✅ {lib}")
+        else:
+            missing.append(lib)
+            print(f"   ❌ {lib}")
+    
+    if not any([PDF_LIBRARIES['pymupdf'], PDF_LIBRARIES['pdfplumber'], PDF_LIBRARIES['pypdf2']]):
+        print("\n⚠️  No PDF libraries installed!")
+        print("   Install at least one: pip install PyMuPDF pdfplumber PyPDF2")
+        return False
+    
+    if missing:
+        print(f"\n💡 Optional libraries for better results:")
+        if 'pymupdf' in missing:
+            print("   pip install PyMuPDF  # Best for complex PDFs")
+        if 'pdfplumber' in missing:
+            print("   pip install pdfplumber  # Best for tables")
+        if 'pytesseract' in missing or 'pdf2image' in missing:
+            print("   pip install pytesseract pdf2image Pillow  # For OCR")
+    
+    return True
 
 
 class MCPClient:
@@ -48,7 +113,7 @@ class MCPClient:
                 self.server_url,
                 json=payload,
                 headers={"Content-Type": "application/json"},
-                timeout=120  # PDF 처리는 시간이 걸릴 수 있음
+                timeout=180  # 복잡한 PDF는 더 오래 걸림
             )
             
             response.raise_for_status()
@@ -71,9 +136,7 @@ class MCPClient:
         
         if result:
             tools = result.get("tools", [])
-            print(f"✅ Found {len(tools)} tools:")
-            for tool in tools:
-                print(f"   - {tool['name']}: {tool['description'][:60]}...")
+            print(f"✅ Found {len(tools)} tools")
         
         return result
     
@@ -119,118 +182,176 @@ class MCPClient:
         if result:
             content = result.get("content", [])
             if content:
-                print(f"✅ Search results:\n{content[0]['text'][:500]}...")
-        
-        return result
-    
-    def rag_query(self, question, k=4, language="ko"):
-        """RAG 질의응답"""
-        print(f"\n💡 Asking: '{question}'")
-        
-        params = {
-            "name": "rag_query",
-            "arguments": {
-                "question": question,
-                "k": k,
-                "language": language
-            }
-        }
-        
-        result = self._send_request("tools/call", params)
-        
-        if result:
-            content = result.get("content", [])
-            if content:
-                print(f"✅ Answer:\n{content[0]['text']}")
+                print(f"✅ Found results")
         
         return result
 
 
-def read_pdf_pypdf2(pdf_path):
-    """PyPDF2로 PDF 읽기"""
-    if not HAS_PYPDF2:
+def extract_text_pymupdf(pdf_path):
+    """PyMuPDF로 텍스트 추출 (이미지 무시, 텍스트만)"""
+    if not PDF_LIBRARIES['pymupdf']:
         return None
     
     try:
-        reader = PdfReader(pdf_path)
+        import fitz
+        doc = fitz.open(str(pdf_path))
         text = ""
         
-        print(f"📖 Reading PDF with PyPDF2: {len(reader.pages)} pages")
+        print(f"📖 Extracting text with PyMuPDF: {len(doc)} pages")
         
-        for i, page in enumerate(reader.pages, 1):
+        for page_num in range(len(doc)):
             try:
-                page_text = page.extract_text()
+                page = doc[page_num]
+                # 텍스트만 추출 (이미지는 제외)
+                page_text = page.get_text("text", flags=fitz.TEXT_PRESERVE_WHITESPACE)
+                
                 if page_text and page_text.strip():
-                    text += f"\n\n[Page {i}]\n{page_text}"
-            except Exception as page_error:
-                print(f"⚠️  Warning: Could not read page {i}: {page_error}")
-                continue
-        
-        return text.strip() if text.strip() else None
-    
-    except Exception as e:
-        print(f"❌ PyPDF2 error: {e}")
-        return None
-
-
-def read_pdf_pdfplumber(pdf_path):
-    """pdfplumber로 PDF 읽기 (더 정확함)"""
-    if not HAS_PDFPLUMBER:
-        return None
-    
-    try:
-        with pdfplumber.open(pdf_path) as pdf:
-            text = ""
-            
-            print(f"📖 Reading PDF with pdfplumber: {len(pdf.pages)} pages")
-            
-            for i, page in enumerate(pdf.pages, 1):
-                try:
-                    page_text = page.extract_text()
-                    if page_text and page_text.strip():
-                        text += f"\n\n[Page {i}]\n{page_text}"
-                except Exception as page_error:
-                    print(f"⚠️  Warning: Could not read page {i}: {page_error}")
-                    continue
-            
-            return text.strip() if text.strip() else None
-    
-    except Exception as e:
-        print(f"❌ pdfplumber error: {e}")
-        return None
-
-
-def read_pdf_pymupdf(pdf_path):
-    """PyMuPDF(fitz)로 PDF 읽기 - 가장 강력함"""
-    try:
-        import fitz  # PyMuPDF
-        
-        doc = fitz.open(pdf_path)
-        text = ""
-        
-        print(f"📖 Reading PDF with PyMuPDF: {len(doc)} pages")
-        
-        for i, page in enumerate(doc, 1):
-            try:
-                page_text = page.get_text()
-                if page_text and page_text.strip():
-                    text += f"\n\n[Page {i}]\n{page_text}"
-            except Exception as page_error:
-                print(f"⚠️  Warning: Could not read page {i}: {page_error}")
+                    text += f"\n\n[Page {page_num + 1}]\n{page_text.strip()}"
+            except Exception as e:
+                print(f"⚠️  Warning: Page {page_num + 1} text error: {str(e)[:50]}")
                 continue
         
         doc.close()
         return text.strip() if text.strip() else None
     
-    except ImportError:
-        return None
     except Exception as e:
-        print(f"❌ PyMuPDF error: {e}")
+        print(f"❌ PyMuPDF error: {str(e)[:100]}")
         return None
 
 
-def read_pdf(pdf_path):
-    """PDF 파일 읽기 (여러 방법 시도)"""
+def extract_tables_pdfplumber(pdf_path):
+    """pdfplumber로 테이블 추출"""
+    if not PDF_LIBRARIES['pdfplumber']:
+        return None
+    
+    try:
+        tables_text = ""
+        
+        with pdfplumber.open(str(pdf_path)) as pdf:
+            print(f"📊 Extracting tables with pdfplumber: {len(pdf.pages)} pages")
+            
+            for page_num, page in enumerate(pdf.pages, 1):
+                try:
+                    tables = page.extract_tables()
+                    
+                    if tables:
+                        tables_text += f"\n\n[Page {page_num} - Tables]\n"
+                        
+                        for table_num, table in enumerate(tables, 1):
+                            tables_text += f"\nTable {table_num}:\n"
+                            
+                            # 테이블을 텍스트로 변환
+                            for row in table:
+                                if row:
+                                    row_text = " | ".join([str(cell) if cell else "" for cell in row])
+                                    tables_text += row_text + "\n"
+                
+                except Exception as e:
+                    print(f"⚠️  Warning: Page {page_num} table error: {str(e)[:50]}")
+                    continue
+        
+        return tables_text.strip() if tables_text.strip() else None
+    
+    except Exception as e:
+        print(f"❌ pdfplumber error: {str(e)[:100]}")
+        return None
+
+
+def extract_text_pdfplumber(pdf_path):
+    """pdfplumber로 일반 텍스트 추출"""
+    if not PDF_LIBRARIES['pdfplumber']:
+        return None
+    
+    try:
+        text = ""
+        
+        with pdfplumber.open(str(pdf_path)) as pdf:
+            print(f"📖 Extracting text with pdfplumber: {len(pdf.pages)} pages")
+            
+            for page_num, page in enumerate(pdf.pages, 1):
+                try:
+                    # layout 옵션으로 더 나은 텍스트 추출
+                    page_text = page.extract_text(layout=True)
+                    
+                    if page_text and page_text.strip():
+                        text += f"\n\n[Page {page_num}]\n{page_text.strip()}"
+                
+                except Exception as e:
+                    print(f"⚠️  Warning: Page {page_num} text error: {str(e)[:50]}")
+                    continue
+        
+        return text.strip() if text.strip() else None
+    
+    except Exception as e:
+        print(f"❌ pdfplumber error: {str(e)[:100]}")
+        return None
+
+
+def extract_text_pypdf2(pdf_path):
+    """PyPDF2로 텍스트 추출 (폴백)"""
+    if not PDF_LIBRARIES['pypdf2']:
+        return None
+    
+    try:
+        reader = PdfReader(str(pdf_path))
+        text = ""
+        
+        print(f"📖 Extracting text with PyPDF2: {len(reader.pages)} pages")
+        
+        for page_num, page in enumerate(reader.pages, 1):
+            try:
+                page_text = page.extract_text()
+                
+                if page_text and page_text.strip():
+                    text += f"\n\n[Page {page_num}]\n{page_text.strip()}"
+            
+            except Exception as e:
+                print(f"⚠️  Warning: Page {page_num} error: {str(e)[:50]}")
+                continue
+        
+        return text.strip() if text.strip() else None
+    
+    except Exception as e:
+        print(f"❌ PyPDF2 error: {str(e)[:100]}")
+        return None
+
+
+def ocr_pdf(pdf_path):
+    """OCR을 사용하여 이미지 기반 PDF 읽기"""
+    if not (PDF_LIBRARIES['pytesseract'] and PDF_LIBRARIES['pdf2image']):
+        return None
+    
+    try:
+        print(f"🔍 Attempting OCR (this may take a while)...")
+        
+        # PDF를 이미지로 변환
+        images = convert_from_path(str(pdf_path), dpi=200)
+        
+        text = ""
+        
+        for page_num, image in enumerate(images, 1):
+            try:
+                print(f"   Processing page {page_num}/{len(images)}...")
+                
+                # OCR 수행
+                page_text = pytesseract.image_to_string(image, lang='eng+kor')
+                
+                if page_text and page_text.strip():
+                    text += f"\n\n[Page {page_num} - OCR]\n{page_text.strip()}"
+            
+            except Exception as e:
+                print(f"⚠️  Warning: OCR page {page_num} error: {str(e)[:50]}")
+                continue
+        
+        return text.strip() if text.strip() else None
+    
+    except Exception as e:
+        print(f"❌ OCR error: {str(e)[:100]}")
+        return None
+
+
+def read_pdf_comprehensive(pdf_path):
+    """종합적인 PDF 읽기 - 모든 방법 시도"""
     pdf_path = Path(pdf_path)
     
     if not pdf_path.exists():
@@ -240,40 +361,66 @@ def read_pdf(pdf_path):
     print(f"\n📄 Reading PDF: {pdf_path.name}")
     print(f"   Size: {pdf_path.stat().st_size / 1024:.2f} KB")
     
-    text = None
-    methods_tried = []
+    all_text = []
+    methods_used = []
     
-    # 방법 1: PyMuPDF (가장 강력하고 빠름)
-    print("\n🔄 Trying PyMuPDF (fitz)...")
-    text = read_pdf_pymupdf(pdf_path)
-    methods_tried.append("PyMuPDF")
-    
-    # 방법 2: pdfplumber (정확하지만 느림)
-    if not text:
-        print("\n🔄 Trying pdfplumber...")
-        text = read_pdf_pdfplumber(pdf_path)
-        methods_tried.append("pdfplumber")
-    
-    # 방법 3: PyPDF2 (기본)
-    if not text:
-        print("\n🔄 Trying PyPDF2...")
-        text = read_pdf_pypdf2(pdf_path)
-        methods_tried.append("PyPDF2")
-    
+    # 1. PyMuPDF로 텍스트 추출 (가장 빠르고 안정적)
+    text = extract_text_pymupdf(pdf_path)
     if text:
-        print(f"\n✅ Successfully extracted text using one of: {', '.join(methods_tried)}")
-        print(f"   Extracted {len(text)} characters")
-        print(f"   Preview: {text[:200].replace(chr(10), ' ')}...")
-    else:
-        print(f"\n❌ Failed to extract text from PDF")
-        print(f"   Tried: {', '.join(methods_tried)}")
-        print("\n💡 Suggestions:")
-        print("   1. Install PyMuPDF (most robust): pip install PyMuPDF")
-        print("   2. Install pdfplumber: pip install pdfplumber")
-        print("   3. Check if PDF is password protected")
-        print("   4. Check if PDF contains only images (needs OCR)")
+        all_text.append(text)
+        methods_used.append("PyMuPDF-text")
     
-    return text
+    # 2. pdfplumber로 테이블 추출
+    tables = extract_tables_pdfplumber(pdf_path)
+    if tables:
+        all_text.append(tables)
+        methods_used.append("pdfplumber-tables")
+    
+    # 3. 텍스트가 거의 없으면 pdfplumber로 텍스트 재시도
+    if not text or len(text) < 500:
+        print("\n⚠️  Low text content, trying pdfplumber...")
+        plumber_text = extract_text_pdfplumber(pdf_path)
+        if plumber_text and len(plumber_text) > len(text or ""):
+            all_text.append(plumber_text)
+            methods_used.append("pdfplumber-text")
+    
+    # 4. 여전히 텍스트가 없으면 PyPDF2 시도
+    if not any(all_text):
+        print("\n⚠️  No text extracted, trying PyPDF2...")
+        pypdf_text = extract_text_pypdf2(pdf_path)
+        if pypdf_text:
+            all_text.append(pypdf_text)
+            methods_used.append("PyPDF2")
+    
+    # 5. 그래도 텍스트가 없으면 OCR 시도
+    if not any(all_text) or sum(len(t) for t in all_text) < 200:
+        print("\n⚠️  Very low text content, this might be an image-based PDF")
+        print("   Attempting OCR (requires pytesseract and pdf2image)...")
+        
+        ocr_text = ocr_pdf(pdf_path)
+        if ocr_text:
+            all_text.append(ocr_text)
+            methods_used.append("OCR")
+    
+    # 결과 병합
+    if all_text:
+        combined_text = "\n\n" + "="*60 + "\n\n".join(all_text)
+        
+        print(f"\n✅ Successfully extracted text")
+        print(f"   Methods used: {', '.join(methods_used)}")
+        print(f"   Total characters: {len(combined_text)}")
+        print(f"   Preview: {combined_text[:200].replace(chr(10), ' ')}...")
+        
+        return combined_text
+    else:
+        print(f"\n❌ Failed to extract any text from PDF")
+        print("\n💡 This PDF might be:")
+        print("   1. Password protected")
+        print("   2. Image-only (install OCR: pip install pytesseract pdf2image)")
+        print("   3. Corrupted or non-standard format")
+        print("\n   Tried methods: {', '.join(methods_used) if methods_used else 'None worked'}")
+        
+        return None
 
 
 def add_pdf_to_mcp(pdf_path, server_url="http://localhost:8000/sse", 
@@ -284,30 +431,36 @@ def add_pdf_to_mcp(pdf_path, server_url="http://localhost:8000/sse",
     print("📚 Adding PDF to RAG MCP Server")
     print("=" * 60)
     
-    # 1. PDF 읽기
-    text = read_pdf(pdf_path)
+    # 의존성 확인
+    if not check_dependencies():
+        return False
+    
+    # PDF 읽기
+    text = read_pdf_comprehensive(pdf_path)
     if not text:
         return False
     
-    # 2. MCP 클라이언트 생성
+    # MCP 클라이언트 생성
     client = MCPClient(server_url)
     
-    # 3. 서버 연결 확인
+    # 서버 연결 확인
     tools = client.list_tools()
     if not tools:
         print("❌ Cannot connect to MCP server")
         return False
     
-    # 4. PDF 메타데이터 준비
+    # PDF 메타데이터
     pdf_path = Path(pdf_path)
     metadata = {
         "source": pdf_path.name,
         "file_path": str(pdf_path.absolute()),
         "file_type": "pdf",
-        "file_size": pdf_path.stat().st_size
+        "file_size": pdf_path.stat().st_size,
+        "has_tables": "Table" in text,
+        "has_ocr": "OCR" in text
     }
     
-    # 5. 문서 추가
+    # 문서 추가
     result = client.add_documents(
         texts=[text],
         metadatas=[metadata],
@@ -318,7 +471,7 @@ def add_pdf_to_mcp(pdf_path, server_url="http://localhost:8000/sse",
     if not result:
         return False
     
-    # 6. 검색 테스트
+    # 검색 테스트
     print("\n🧪 Testing search...")
     client.search_documents(pdf_path.stem, k=2)
     
@@ -334,37 +487,32 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(
-        description="Add PDF file to RAG MCP Server"
+        description="Add PDF file to RAG MCP Server (Enhanced with OCR & Table support)"
     )
     parser.add_argument(
         "pdf_path",
-        help="Path to PDF file (e.g., abc.pdf)"
+        help="Path to PDF file"
     )
     parser.add_argument(
         "--server",
         default="http://localhost:8000/sse",
-        help="MCP server URL (default: http://localhost:8000/sse)"
+        help="MCP server URL"
     )
     parser.add_argument(
         "--chunk-size",
         type=int,
         default=1000,
-        help="Chunk size for splitting (default: 1000)"
+        help="Chunk size for splitting"
     )
     parser.add_argument(
         "--chunk-overlap",
         type=int,
         default=200,
-        help="Chunk overlap (default: 200)"
-    )
-    parser.add_argument(
-        "--test-query",
-        help="Test query after adding PDF"
+        help="Chunk overlap"
     )
     
     args = parser.parse_args()
     
-    # PDF 추가
     success = add_pdf_to_mcp(
         args.pdf_path,
         args.server,
@@ -372,36 +520,20 @@ def main():
         args.chunk_overlap
     )
     
-    if not success:
-        exit(1)
-    
-    # 테스트 쿼리
-    if args.test_query:
-        client = MCPClient(args.server)
-        client.rag_query(args.test_query, k=3)
+    sys.exit(0 if success else 1)
 
 
 if __name__ == "__main__":
-    # 명령줄 인자가 없으면 기본 예제 실행
-    import sys
-    
     if len(sys.argv) == 1:
-        print("\n사용 예제:")
-        print("  python add_pdf_to_mcp.py abc.pdf")
-        print("  python add_pdf_to_mcp.py abc.pdf --test-query 'PDF의 주요 내용은?'")
-        print("  python add_pdf_to_mcp.py /path/to/document.pdf --chunk-size 500")
-        print("\n또는 코드에서 직접 호출:")
-        print("  from add_pdf_to_mcp import add_pdf_to_mcp")
-        print("  add_pdf_to_mcp('abc.pdf')")
+        print("\n🚀 Enhanced PDF to MCP - with Table & OCR support")
+        print("\n사용법:")
+        print("  python add_pdf_to_mcp.py document.pdf")
+        print("  python add_pdf_to_mcp.py document.pdf --chunk-size 800")
+        print("\n필수 설치:")
+        print("  pip install PyMuPDF pdfplumber PyPDF2 requests")
+        print("\nOCR 지원 (선택):")
+        print("  pip install pytesseract pdf2image Pillow")
+        print("  # And install Tesseract: https://github.com/tesseract-ocr/tesseract")
         print()
-        
-        # 기본 테스트
-        test_file = "abc.pdf"
-        if Path(test_file).exists():
-            print(f"✅ Found {test_file}, running test...")
-            add_pdf_to_mcp(test_file)
-        else:
-            print(f"⚠️  {test_file} not found. Please specify a PDF file.")
-            print("   Usage: python add_pdf_to_mcp.py <pdf_file>")
     else:
         main()

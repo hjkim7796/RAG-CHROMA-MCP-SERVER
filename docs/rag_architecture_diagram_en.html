@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG MCP Server Architecture Diagram</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+        
+        .diagram-section {
+            margin-bottom: 60px;
+        }
+        
+        .section-title {
+            font-size: 1.8em;
+            color: #34495e;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #3498db;
+        }
+        
+        /* Overall System Architecture */
+        .architecture {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .layer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 25px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .layer:hover {
+            transform: translateY(-5px);
+        }
+        
+        .layer-title {
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+            padding-bottom: 10px;
+        }
+        
+        .layer-content {
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+        
+        .component {
+            background: rgba(255,255,255,0.15);
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border-left: 4px solid #fff;
+        }
+        
+        /* Data Flow Diagram */
+        .flow-diagram {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 40px 0;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+        
+        .flow-box {
+            background: white;
+            border: 3px solid #3498db;
+            border-radius: 12px;
+            padding: 20px 30px;
+            min-width: 180px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .flow-box.client {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border-color: #f5576c;
+        }
+        
+        .flow-box.server {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border-color: #00f2fe;
+        }
+        
+        .flow-box.storage {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            color: white;
+            border-color: #38f9d7;
+        }
+        
+        .flow-box.ai {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+            border-color: #fee140;
+        }
+        
+        .flow-arrow {
+            font-size: 2em;
+            color: #3498db;
+            display: flex;
+            align-items: center;
+        }
+        
+        .flow-label {
+            font-size: 0.85em;
+            color: #7f8c8d;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        
+        /* MCP Tool Cards */
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        
+        .tool-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .tool-card:hover {
+            border-color: #3498db;
+            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.2);
+            transform: translateY(-3px);
+        }
+        
+        .tool-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .tool-icon {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .tool-description {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .tool-params {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9em;
+        }
+        
+        .param-item {
+            margin: 5px 0;
+            padding-left: 15px;
+            position: relative;
+        }
+        
+        .param-item:before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: #3498db;
+        }
+        
+        /* RAG Process Flow */
+        .process-flow {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+        
+        .process-step {
+            display: flex;
+            align-items: flex-start;
+            margin: 25px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+        
+        .step-number {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+        
+        .step-content {
+            flex: 1;
+        }
+        
+        .step-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        
+        .step-description {
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        /* Technology Stack */
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .tech-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .tech-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .tech-version {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        /* Key Features */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .feature-card {
+            background: white;
+            border-left: 5px solid #3498db;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+        
+        .feature-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .feature-description {
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .architecture {
+                grid-template-columns: 1fr;
+            }
+            
+            .flow-diagram {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 RAG MCP Server Architecture</h1>
+        <p class="subtitle">Vector Search System with LangChain 1.0 + ChromaDB + Claude</p>
+        
+        <!-- System Architecture -->
+        <div class="diagram-section">
+            <h2 class="section-title">📐 System Architecture</h2>
+            <div class="architecture">
+                <div class="layer">
+                    <div class="layer-title">🎨 Client Layer</div>
+                    <div class="layer-content">
+                        <div class="component">Claude Desktop App</div>
+                        <div class="component">MCP Client</div>
+                        <div class="component">User Interface</div>
+                    </div>
+                </div>
+                
+                <div class="layer">
+                    <div class="layer-title">⚙️ Server Layer</div>
+                    <div class="layer-content">
+                        <div class="component">MCP Server (http)</div>
+                        <div class="component">Tool Handlers</div>
+                        <div class="component">LangChain Integration</div>
+                        <div class="component">Claude API Client</div>
+                    </div>
+                </div>
+                
+                <div class="layer">
+                    <div class="layer-title">💾 Storage Layer</div>
+                    <div class="layer-content">
+                        <div class="component">ChromaDB</div>
+                        <div class="component">Vector Store</div>
+                        <div class="component">HuggingFace Embeddings</div>
+                        <div class="component">Persistent Storage</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Flow -->
+        <div class="diagram-section">
+            <h2 class="section-title">🔄 Data Flow</h2>
+            <div class="flow-diagram">
+                <div class="flow-box client">
+                    <strong>User</strong>
+                    <div class="flow-label">Query/Command</div>
+                </div>
+                
+                <div class="flow-arrow">→</div>
+                
+                <div class="flow-box server">
+                    <strong>MCP Server</strong>
+                    <div class="flow-label">Process Request</div>
+                </div>
+                
+                <div class="flow-arrow">→</div>
+                
+                <div class="flow-box storage">
+                    <strong>Vector DB</strong>
+                    <div class="flow-label">Search Documents</div>
+                </div>
+                
+                <div class="flow-arrow">→</div>
+                
+                <div class="flow-box ai">
+                    <strong>Claude AI</strong>
+                    <div class="flow-label">Generate Answer</div>
+                </div>
+                
+                <div class="flow-arrow">→</div>
+                
+                <div class="flow-box client">
+                    <strong>User</strong>
+                    <div class="flow-label">Return Result</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- RAG Process -->
+        <div class="diagram-section">
+            <h2 class="section-title">🤖 RAG Process Flow</h2>
+            <div class="process-flow">
+                <div class="process-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Document Ingestion (add_documents)</div>
+                        <div class="step-description">
+                            Receive source documents → Split into chunks using RecursiveCharacterTextSplitter → 
+                            Convert to vectors using HuggingFace embeddings → 
+                            Store in ChromaDB with metadata
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Vector Search (search_documents)</div>
+                        <div class="step-description">
+                            Convert user query to embedding → 
+                            Search ChromaDB using cosine similarity → 
+                            Return top k documents (default: 4)
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Context Construction</div>
+                        <div class="step-description">
+                            Merge retrieved documents into unified context → 
+                            Maintain document order and source information → 
+                            Generate prompt template
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">AI Answer Generation (rag_query)</div>
+                        <div class="step-description">
+                            Send context + question to Claude API → 
+                            Claude Sonnet 4 model generates answer → 
+                            Return result with source citations
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="process-step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">Result Formatting & Return</div>
+                        <div class="step-description">
+                            Format answer text + reference document info → 
+                            Include metadata (source, chunk position, etc.) → 
+                            Deliver final result to user
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- MCP Tools -->
+        <div class="diagram-section">
+            <h2 class="section-title">🛠️ Available MCP Tools</h2>
+            <div class="tools-grid">
+                <div class="tool-card">
+                    <div class="tool-name">
+                        <div class="tool-icon">1</div>
+                        add_documents
+                    </div>
+                    <div class="tool-description">
+                        Add documents to the vector database. Automatically handles chunk splitting and embedding.
+                    </div>
+                    <div class="tool-params">
+                        <strong>Parameters:</strong>
+                        <div class="param-item">texts: Array of document texts</div>
+                        <div class="param-item">metadatas: Array of metadata objects</div>
+                        <div class="param-item">chunk_size: Chunk size (default: 1000)</div>
+                        <div class="param-item">chunk_overlap: Overlap size (default: 200)</div>
+                    </div>
+                </div>
+                
+                <div class="tool-card">
+                    <div class="tool-name">
+                        <div class="tool-icon">2</div>
+                        search_documents
+                    </div>
+                    <div class="tool-description">
+                        Search for similar documents in the vector database using cosine similarity.
+                    </div>
+                    <div class="tool-params">
+                        <strong>Parameters:</strong>
+                        <div class="param-item">query: Search query string</div>
+                        <div class="param-item">k: Number of results (default: 4)</div>
+                        <div class="param-item">filter: Optional metadata filter</div>
+                    </div>
+                </div>
+                
+                <div class="tool-card">
+                    <div class="tool-name">
+                        <div class="tool-icon">3</div>
+                        rag_query
+                    </div>
+                    <div class="tool-description">
+                        Answer questions using RAG. Retrieves relevant documents and generates answers with Claude.
+                    </div>
+                    <div class="tool-params">
+                        <strong>Parameters:</strong>
+                        <div class="param-item">question: Question text</div>
+                        <div class="param-item">k: Number of docs to search (default: 4)</div>
+                        <div class="param-item">language: Answer language (ko/en)</div>
+                    </div>
+                </div>
+                
+                <div class="tool-card">
+                    <div class="tool-name">
+                        <div class="tool-icon">4</div>
+                        get_collection_info
+                    </div>
+                    <div class="tool-description">
+                        Retrieve current collection information including document count and storage location.
+                    </div>
+                    <div class="tool-params">
+                        <strong>Parameters:</strong>
+                        <div class="param-item">None (no parameters required)</div>
+                    </div>
+                </div>
+                
+                <div class="tool-card">
+                    <div class="tool-name">
+                        <div class="tool-icon">5</div>
+                        delete_collection
+                    </div>
+                    <div class="tool-description">
+                        Delete entire collection. All documents and embeddings will be permanently removed.
+                    </div>
+                    <div class="tool-params">
+                        <strong>Parameters:</strong>
+                        <div class="param-item">confirm: Confirmation flag (must be true)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Key Features -->
+        <div class="diagram-section">
+            <h2 class="section-title">✨ Key Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-title">🔤 Automatic Text Chunking</div>
+                    <div class="feature-description">
+                        Documents are automatically split into manageable chunks (1000 chars with 200 char overlap) 
+                        while preserving semantic coherence.
+                    </div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-title">🧠 Smart Embeddings</div>
+                    <div class="feature-description">
+                        Uses sentence-transformers/all-MiniLM-L6-v2 model for high-quality embeddings. 
+                        Runs locally without API keys.
+                    </div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-title">💾 Persistent Storage</div>
+                    <div class="feature-description">
+                        ChromaDB stores vectors persistently on disk. Data survives server restarts 
+                        and can be queried anytime.
+                    </div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-title">🎯 Similarity Search</div>
+                    <div class="feature-description">
+                        Cosine similarity-based vector search efficiently finds the most relevant 
+                        documents for any query.
+                    </div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-title">🏷️ Metadata Management</div>
+                    <div class="feature-description">
+                        Store and filter documents by custom metadata (source, category, tags, etc.) 
+                        for precise retrieval.
+                    </div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-title">🌍 Multilingual Support</div>
+                    <div class="feature-description">
+                        Supports multiple languages through HuggingFace embeddings and Claude's 
+                        multilingual capabilities.
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Technology Stack -->
+        <div class="diagram-section">
+            <h2 class="section-title">💻 Technology Stack</h2>
+            <div class="tech-stack">
+                <div class="tech-item">
+                    <div class="tech-name">LangChain</div>
+                    <div class="tech-version">v1.0.7</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-name">ChromaDB</div>
+                    <div class="tech-version">v1.3.5</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-name">Claude AI</div>
+                    <div class="tech-version">Sonnet 4</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-name">HuggingFace</div>
+                    <div class="tech-version">Transformers v5.1.2</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-name">MCP</div>
+                    <div class="tech-version">v1.21.2</div>
+                </div>
+                <div class="tech-item">
+                    <div class="tech-name">Python</div>
+                    <div class="tech-version">v3.12</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

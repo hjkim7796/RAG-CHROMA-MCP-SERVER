@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG & LangChain Architecture Diagrams</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 50px;
+            font-size: 1.1em;
+        }
+        
+        .diagram-section {
+            margin-bottom: 80px;
+        }
+        
+        .section-title {
+            font-size: 2em;
+            color: #34495e;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 4px solid #3498db;
+            text-align: center;
+        }
+        
+        .svg-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 40px;
+            margin: 30px 0;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        
+        svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        /* SVG Styles */
+        .box {
+            stroke: #2c3e50;
+            stroke-width: 3;
+            transition: all 0.3s ease;
+        }
+        
+        .box:hover {
+            filter: brightness(1.1);
+            stroke-width: 4;
+        }
+        
+        .box-primary {
+            fill: #3498db;
+        }
+        
+        .box-success {
+            fill: #2ecc71;
+        }
+        
+        .box-warning {
+            fill: #f39c12;
+        }
+        
+        .box-danger {
+            fill: #e74c3c;
+        }
+        
+        .box-info {
+            fill: #9b59b6;
+        }
+        
+        .box-purple {
+            fill: #8e44ad;
+        }
+        
+        .box-teal {
+            fill: #1abc9c;
+        }
+        
+        .box-pink {
+            fill: #e91e63;
+        }
+        
+        .arrow {
+            stroke: #2c3e50;
+            stroke-width: 3;
+            fill: none;
+            marker-end: url(#arrowhead);
+        }
+        
+        .arrow-dashed {
+            stroke-dasharray: 5,5;
+        }
+        
+        .text-white {
+            fill: white;
+            font-size: 16px;
+            font-weight: bold;
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+        
+        .text-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .text-small {
+            font-size: 14px;
+            font-weight: normal;
+        }
+        
+        .circle {
+            stroke: #2c3e50;
+            stroke-width: 3;
+        }
+        
+        .database {
+            fill: #34495e;
+            stroke: #2c3e50;
+            stroke-width: 2;
+        }
+        
+        .legend-text {
+            font-size: 14px;
+            fill: #2c3e50;
+        }
+        
+        @media (max-width: 768px) {
+            .svg-container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 RAG & LangChain Architecture</h1>
+        <p class="subtitle">Visual Representation with Shapes and Diagrams</p>
+        
+        <!-- RAG Architecture -->
+        <div class="diagram-section">
+            <h2 class="section-title">🔍 RAG (Retrieval-Augmented Generation) Architecture</h2>
+            
+            <div class="svg-container">
+                <svg viewBox="0 0 1400 800" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Arrow marker definition -->
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                            <polygon points="0 0, 10 3, 0 6" fill="#2c3e50" />
+                        </marker>
+                    </defs>
+                    
+                    <!-- Title -->
+                    <text x="700" y="40" class="text-white text-title" fill="#2c3e50">RAG System Flow</text>
+                    
+                    <!-- Step 1: User Query -->
+                    <rect x="50" y="100" width="200" height="100" rx="10" class="box box-primary"/>
+                    <text x="150" y="140" class="text-white text-title">User Query</text>
+                    <text x="150" y="165" class="text-white text-small">"What is RAG?"</text>
+                    
+                    <!-- Arrow 1 -->
+                    <path d="M 250 150 L 350 150" class="arrow"/>
+                    <text x="260" y="140" class="legend-text">1. Question</text>
+                    
+                    <!-- Step 2: Embedding -->
+                    <rect x="350" y="100" width="200" height="100" rx="10" class="box box-success"/>
+                    <text x="450" y="140" class="text-white text-title">Embedding</text>
+                    <text x="450" y="165" class="text-white text-small">Convert to Vector</text>
+                    
+                    <!-- Arrow 2 -->
+                    <path d="M 550 150 L 650 150" class="arrow"/>
+                    <text x="560" y="140" class="legend-text">2. Vectorize</text>
+                    
+                    <!-- Step 3: Vector DB Search -->
+                    <g>
+                        <!-- Database cylinder -->
+                        <ellipse cx="750" cy="120" rx="100" ry="30" class="database"/>
+                        <rect x="650" y="120" width="200" height="80" class="database"/>
+                        <ellipse cx="750" cy="200" rx="100" ry="30" class="database"/>
+                        <text x="750" y="155" class="text-white text-title">Vector DB</text>
+                        <text x="750" y="180" class="text-white text-small">ChromaDB</text>
+                    </g>
+                    
+                    <!-- Arrow 3 -->
+                    <path d="M 850 150 L 950 150" class="arrow"/>
+                    <text x="860" y="140" class="legend-text">3. Search</text>
+                    
+                    <!-- Step 4: Retrieved Documents -->
+                    <rect x="950" y="100" width="200" height="100" rx="10" class="box box-warning"/>
+                    <text x="1050" y="135" class="text-white text-title">Retrieved Docs</text>
+                    <text x="1050" y="160" class="text-white text-small">Top K Results</text>
+                    <text x="1050" y="180" class="text-white text-small">(Relevant Context)</text>
+                    
+                    <!-- Arrow 4 (down) -->
+                    <path d="M 1050 200 L 1050 300" class="arrow"/>
+                    <text x="1070" y="250" class="legend-text">4. Context</text>
+                    
+                    <!-- Step 5: LLM Processing -->
+                    <rect x="850" y="300" width="400" height="120" rx="15" class="box box-danger"/>
+                    <text x="1050" y="340" class="text-white text-title">Large Language Model</text>
+                    <text x="1050" y="365" class="text-white text-small">Claude / GPT / Gemini</text>
+                    <text x="1050" y="390" class="text-white text-small">Context + Question → Answer</text>
+                    
+                    <!-- Arrow 5 (left) -->
+                    <path d="M 850 360 L 550 360" class="arrow"/>
+                    <text x="700" y="350" class="legend-text">5. Generate</text>
+                    
+                    <!-- Step 6: Final Answer -->
+                    <rect x="350" y="310" width="200" height="100" rx="10" class="box box-info"/>
+                    <text x="450" y="345" class="text-white text-title">Final Answer</text>
+                    <text x="450" y="370" class="text-white text-small">Contextualized</text>
+                    <text x="450" y="390" class="text-white text-small">Response</text>
+                    
+                    <!-- Arrow 6 -->
+                    <path d="M 350 360 L 250 360" class="arrow"/>
+                    <text x="270" y="350" class="legend-text">6. Return</text>
+                    
+                    <!-- Step 7: User receives answer -->
+                    <rect x="50" y="310" width="200" height="100" rx="10" class="box box-primary"/>
+                    <text x="150" y="350" class="text-white text-title">User</text>
+                    <text x="150" y="375" class="text-white text-small">Receives Answer</text>
+                    
+                    <!-- Document Ingestion Flow (Bottom) -->
+                    <text x="700" y="480" class="text-white text-title" fill="#2c3e50">Document Ingestion Pipeline</text>
+                    
+                    <!-- Documents -->
+                    <rect x="50" y="520" width="180" height="80" rx="10" class="box box-teal"/>
+                    <text x="140" y="555" class="text-white text-title">Documents</text>
+                    <text x="140" y="580" class="text-white text-small">PDF, Text, etc.</text>
+                    
+                    <path d="M 230 560 L 330 560" class="arrow"/>
+                    
+                    <!-- Text Splitter -->
+                    <rect x="330" y="520" width="180" height="80" rx="10" class="box box-success"/>
+                    <text x="420" y="555" class="text-white text-title">Text Splitter</text>
+                    <text x="420" y="580" class="text-white text-small">Chunk into Parts</text>
+                    
+                    <path d="M 510 560 L 610 560" class="arrow"/>
+                    
+                    <!-- Embeddings -->
+                    <rect x="610" y="520" width="180" height="80" rx="10" class="box box-warning"/>
+                    <text x="700" y="555" class="text-white text-title">Embeddings</text>
+                    <text x="700" y="580" class="text-white text-small">HuggingFace</text>
+                    
+                    <path d="M 790 560 L 890 560" class="arrow"/>
+                    
+                    <!-- Vector Store -->
+                    <rect x="890" y="520" width="180" height="80" rx="10" class="box box-purple"/>
+                    <text x="980" y="555" class="text-white text-title">Vector Store</text>
+                    <text x="980" y="580" class="text-white text-small">ChromaDB</text>
+                    
+                    <!-- Connection to main flow -->
+                    <path d="M 980 520 L 980 450 L 750 450 L 750 230" class="arrow arrow-dashed"/>
+                    <text x="800" y="440" class="legend-text">Stored Data</text>
+                    
+                    <!-- Legend -->
+                    <g transform="translate(50, 680)">
+                        <text x="0" y="0" class="legend-text" font-weight="bold" font-size="16">Legend:</text>
+                        
+                        <rect x="0" y="15" width="30" height="20" rx="3" class="box box-primary"/>
+                        <text x="40" y="28" class="legend-text">User Interface</text>
+                        
+                        <rect x="200" y="15" width="30" height="20" rx="3" class="box box-success"/>
+                        <text x="240" y="28" class="legend-text">Processing</text>
+                        
+                        <rect x="400" y="15" width="30" height="20" rx="3" class="box box-warning"/>
+                        <text x="440" y="28" class="legend-text">Data/Context</text>
+                        
+                        <rect x="600" y="15" width="30" height="20" rx="3" class="box box-danger"/>
+                        <text x="640" y="28" class="legend-text">AI Model</text>
+                        
+                        <rect x="800" y="15" width="30" height="20" rx="3" class="box box-purple"/>
+                        <text x="840" y="28" class="legend-text">Storage</text>
+                    </g>
+                </svg>
+            </div>
+        </div>
+        
+        <!-- LangChain Architecture -->
+        <div class="diagram-section">
+            <h2 class="section-title">⛓️ LangChain 1.0 Architecture</h2>
+            
+            <div class="svg-container">
+                <svg viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <marker id="arrowhead2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                            <polygon points="0 0, 10 3, 0 6" fill="#2c3e50" />
+                        </marker>
+                    </defs>
+                    
+                    <!-- Title -->
+                    <text x="700" y="40" class="text-white text-title" fill="#2c3e50">LangChain Modular Architecture</text>
+                    
+                    <!-- Core Layer -->
+                    <g>
+                        <rect x="50" y="100" width="1300" height="150" rx="15" fill="#5cf1f1" stroke="#34495e" stroke-width="3"/>
+                        <text x="700" y="130" class="text-white text-title" fill="#2c3e50">langchain-core (Core Abstractions)</text>
+                        
+                        <!-- Core components -->
+                        <rect x="100" y="160" width="180" height="60" rx="8" class="box box-info"/>
+                        <text x="190" y="185" class="text-white">Documents</text>
+                        <text x="190" y="205" class="text-white text-small">Base Classes</text>
+                        
+                        <rect x="320" y="160" width="180" height="60" rx="8" class="box box-info"/>
+                        <text x="410" y="185" class="text-white">Prompts</text>
+                        <text x="410" y="205" class="text-white text-small">Templates</text>
+                        
+                        <rect x="540" y="160" width="180" height="60" rx="8" class="box box-info"/>
+                        <text x="630" y="185" class="text-white">Chains</text>
+                        <text x="630" y="205" class="text-white text-small">Runnables</text>
+                        
+                        <rect x="760" y="160" width="180" height="60" rx="8" class="box box-info"/>
+                        <text x="850" y="185" class="text-white">Messages</text>
+                        <text x="850" y="205" class="text-white text-small">Chat Schema</text>
+                        
+                        <rect x="980" y="160" width="180" height="60" rx="8" class="box box-info"/>
+                        <text x="1070" y="185" class="text-white">Callbacks</text>
+                        <text x="1070" y="205" class="text-white text-small">Event System</text>
+                    </g>
+                    
+                    <!-- Integration Layer -->
+                    <g>
+                        <rect x="50" y="300" width="600" height="250" rx="15" fill="#9fd8f5" stroke="#16a085" stroke-width="3"/>
+                        <text x="350" y="330" class="text-white text-title" fill="#16a085">langchain-community (Integrations)</text>
+                        
+                        <!-- Community components -->
+                        <rect x="100" y="360" width="160" height="60" rx="8" class="box box-success"/>
+                        <text x="180" y="385" class="text-white">Vector Stores</text>
+                        <text x="180" y="405" class="text-white text-small">Chroma, Pinecone</text>
+                        
+                        <rect x="290" y="360" width="160" height="60" rx="8" class="box box-success"/>
+                        <text x="370" y="385" class="text-white">Embeddings</text>
+                        <text x="370" y="405" class="text-white text-small">HuggingFace</text>
+                        
+                        <rect x="480" y="360" width="160" height="60" rx="8" class="box box-success"/>
+                        <text x="560" y="385" class="text-white">Document</text>
+                        <text x="560" y="405" class="text-white text-small">Loaders</text>
+                        
+                        <rect x="100" y="440" width="160" height="60" rx="8" class="box box-success"/>
+                        <text x="180" y="465" class="text-white">Tools</text>
+                        <text x="180" y="485" class="text-white text-small">Search, APIs</text>
+                        
+                        <rect x="290" y="440" width="160" height="60" rx="8" class="box box-success"/>
+                        <text x="370" y="465" class="text-white">Retrievers</text>
+                        <text x="370" y="485" class="text-white text-small">Custom Logic</text>
+                        
+                        <rect x="480" y="440" width="160" height="60" rx="8" class="box box-success"/>
+                        <text x="560" y="465" class="text-white">Utilities</text>
+                        <text x="560" y="485" class="text-white text-small">Helpers</text>
+                    </g>
+                    
+                    <!-- Text Splitters Layer -->
+                    <g>
+                        <rect x="700" y="300" width="300" height="100" rx="15" fill="#fe19e7" stroke="#f39c12" stroke-width="3"/>
+                        <text x="850" y="330" class="text-white text-title" fill="#f39c12">langchain-text-splitters</text>
+                        
+                        <rect x="730" y="360" width="230" height="60" rx="8" class="box box-warning"/>
+                        <text x="845" y="385" class="text-white">Text Splitters</text>
+                        <text x="845" y="405" class="text-white text-small">Recursive, Character</text>
+                    </g>
+                    
+                    <!-- LLM Providers -->
+                    <g>
+                        <rect x="1050" y="300" width="300" height="240" rx="15" fill="#fadbd8" stroke="#e74c3c" stroke-width="3"/>
+                        <text x="1200" y="330" class="text-white text-title" fill="#e74c3c">LLM Providers</text>
+                        
+                        <rect x="1080" y="360" width="110" height="60" rx="8" class="box box-danger"/>
+                        <text x="1135" y="385" class="text-white">Claude</text>
+                        <text x="1135" y="405" class="text-white text-small">Anthropic</text>
+                        
+                        <rect x="1210" y="360" width="110" height="60" rx="8" class="box box-danger"/>
+                        <text x="1265" y="385" class="text-white">GPT</text>
+                        <text x="1265" y="405" class="text-white text-small">OpenAI</text>
+                        
+                        <rect x="1080" y="440" width="110" height="60" rx="8" class="box box-danger"/>
+                        <text x="1135" y="465" class="text-white">Gemini</text>
+                        <text x="1135" y="485" class="text-white text-small">Google</text>
+                        
+                        <rect x="1210" y="440" width="110" height="60" rx="8" class="box box-danger"/>
+                        <text x="1265" y="465" class="text-white">Others</text>
+                        <text x="1265" y="485" class="text-white text-small">Various</text>
+                    </g>
+                    
+                    <!-- Main LangChain Package -->
+                    <g>
+                        <rect x="400" y="558" width="600" height="120" rx="15" fill="#d6aaf8" stroke="#3498db" stroke-width="4"/>
+                        <text x="700" y="590" class="text-white text-title" fill="#2c3e50" font-size="22">langchain (Main Package)</text>
+                        <text x="700" y="620" class="text-white text-small" fill="#34495e">Orchestrates all modules together</text>
+                        <text x="700" y="645" class="text-white text-small" fill="#34495e">Provides unified interface and workflows</text>
+                    </g>
+                    
+                    <!-- Arrows connecting layers -->
+                    <path d="M 190 250 L 190 300" class="arrow" marker-end="url(#arrowhead2)"/>
+                    <path d="M 410 250 L 410 300" class="arrow" marker-end="url(#arrowhead2)"/>
+                    <path d="M 630 250 L 630 300" class="arrow" marker-end="url(#arrowhead2)"/>
+                    <path d="M 850 250 L 850 300" class="arrow" marker-end="url(#arrowhead2)"/>
+                    
+                    <path d="M 350 500 L 500 550" class="arrow" marker-end="url(#arrowhead2)"/>
+                    <path d="M 850 420 L 700 550" class="arrow" marker-end="url(#arrowhead2)"/>
+                    <path d="M 1050 500 L 900 550" class="arrow" marker-end="url(#arrowhead2)"/>
+                    
+                    <!-- Application Layer -->
+                    <g>
+                        <rect x="300" y="720" width="800" height="100" rx="15" fill="#e8c1ef" stroke="#8e44ad" stroke-width="4"/>
+                        <text x="700" y="755" class="text-white text-title" fill="#2c3e50" font-size="22">Your RAG Application</text>
+                        <text x="700" y="785" class="text-white text-small" fill="#34495e">Built using LangChain components</text>
+                    </g>
+                    
+                    <path d="M 700 680 L 700 720" class="arrow" marker-end="url(#arrowhead2)" stroke-width="4"/>
+                    
+                    <!-- Module Dependencies Legend -->
+                    <g transform="translate(50, 860)">
+                        <text x="0" y="0" class="legend-text" font-weight="bold" font-size="16">Module Dependencies:</text>
+                        
+                        <line x1="200" y1="-5" x2="230" y2="-5" class="arrow" marker-end="url(#arrowhead2)"/>
+                        <text x="240" y="0" class="legend-text">Depends on</text>
+                        
+                        <text x="400" y="0" class="legend-text" fill="#3498db">■ Main Package</text>
+                        <text x="600" y="0" class="legend-text" fill="#16a085">■ Community Integrations</text>
+                        <text x="850" y="0" class="legend-text" fill="#e74c3c">■ LLM Providers</text>
+                        <text x="1100" y="0" class="legend-text" fill="#9b59b6">■ Core Abstractions</text>
+                    </g>
+                </svg>
+            </div>
+        </div>
+        
+        <!-- RAG + LangChain Integration -->
+        <div class="diagram-section">
+            <h2 class="section-title">🔗 RAG + LangChain Integration</h2>
+            
+            <div class="svg-container">
+                <svg viewBox="0 0 1400 700" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <marker id="arrowhead3" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                            <polygon points="0 0, 10 3, 0 6" fill="#2c3e50" />
+                        </marker>
+                    </defs>
+                    
+                    <!-- Title -->
+                    <text x="700" y="40" class="text-white text-title" fill="#2c3e50">How LangChain Powers RAG</text>
+                    
+                    <!-- Left side: RAG Components -->
+                    <g>
+                        <text x="200" y="100" class="text-white text-title" fill="#e74c3c">RAG Components</text>
+                        
+                        <!-- Document Loading -->
+                        <rect x="50" y="140" width="300" height="80" rx="10" class="box box-teal"/>
+                        <text x="200" y="170" class="text-white text-title">1. Document Loading</text>
+                        <text x="200" y="195" class="text-white text-small">Load PDF, Text, HTML</text>
+                        
+                        <!-- Text Splitting -->
+                        <rect x="50" y="250" width="300" height="80" rx="10" class="box box-teal"/>
+                        <text x="200" y="280" class="text-white text-title">2. Text Splitting</text>
+                        <text x="200" y="305" class="text-white text-small">Chunk documents</text>
+                        
+                        <!-- Embedding -->
+                        <rect x="50" y="360" width="300" height="80" rx="10" class="box box-teal"/>
+                        <text x="200" y="390" class="text-white text-title">3. Embedding</text>
+                        <text x="200" y="415" class="text-white text-small">Convert to vectors</text>
+                        
+                        <!-- Storage -->
+                        <rect x="50" y="470" width="300" height="80" rx="10" class="box box-teal"/>
+                        <text x="200" y="500" class="text-white text-title">4. Vector Storage</text>
+                        <text x="200" y="525" class="text-white text-small">Store in database</text>
+                        
+                        <!-- Retrieval -->
+                        <rect x="50" y="580" width="300" height="80" rx="10" class="box box-teal"/>
+                        <text x="200" y="610" class="text-white text-title">5. Retrieval</text>
+                        <text x="200" y="635" class="text-white text-small">Search similar docs</text>
+                    </g>
+                    
+                    <!-- Right side: LangChain Implementation -->
+                    <g>
+                        <text x="1000" y="100" class="text-white text-title" fill="#3498db">LangChain Implementation</text>
+                        
+                        <!-- Document Loaders -->
+                        <rect x="750" y="140" width="400" height="80" rx="10" class="box box-success"/>
+                        <text x="950" y="165" class="text-white text-title">Document Loaders</text>
+                        <text x="950" y="190" class="text-white text-small">PyPDFLoader, TextLoader, UnstructuredLoader</text>
+                        <text x="950" y="210" class="text-white text-small">from langchain_community.document_loaders</text>
+                        
+                        <!-- Text Splitters -->
+                        <rect x="750" y="250" width="400" height="80" rx="10" class="box box-warning"/>
+                        <text x="950" y="275" class="text-white text-title">Text Splitters</text>
+                        <text x="950" y="300" class="text-white text-small">RecursiveCharacterTextSplitter</text>
+                        <text x="950" y="320" class="text-white text-small">from langchain_text_splitters</text>
+                        
+                        <!-- Embeddings -->
+                        <rect x="750" y="360" width="400" height="80" rx="10" class="box box-warning"/>
+                        <text x="950" y="385" class="text-white text-title">Embeddings</text>
+                        <text x="950" y="410" class="text-white text-small">HuggingFaceEmbeddings, OpenAIEmbeddings</text>
+                        <text x="950" y="430" class="text-white text-small">from langchain_community.embeddings</text>
+                        
+                        <!-- Vector Stores -->
+                        <rect x="750" y="470" width="400" height="80" rx="10" class="box box-purple"/>
+                        <text x="950" y="495" class="text-white text-title">Vector Stores</text>
+                        <text x="950" y="520" class="text-white text-small">Chroma, Pinecone, FAISS, Weaviate</text>
+                        <text x="950" y="540" class="text-white text-small">from langchain_community.vectorstores</text>
+                        
+                        <!-- Retrievers -->
+                        <rect x="750" y="580" width="400" height="80" rx="10" class="box box-danger"/>
+                        <text x="950" y="605" class="text-white text-title">Retrievers</text>
+                        <text x="950" y="630" class="text-white text-small">VectorStoreRetriever, similarity_search()</text>
+                        <text x="950" y="650" class="text-white text-small">Built-in retrieval methods</text>
+                    </g>
+                    
+                    <!-- Connecting arrows -->
+                    <path d="M 350 180 L 750 180" class="arrow" marker-end="url(#arrowhead3)"/>
+                    <path d="M 350 290 L 750 290" class="arrow" marker-end="url(#arrowhead3)"/>
+                    <path d="M 350 400 L 750 400" class="arrow" marker-end="url(#arrowhead3)"/>
+                    <path d="M 350 510 L 750 510" class="arrow" marker-end="url(#arrowhead3)"/>
+                    <path d="M 350 620 L 750 620" class="arrow" marker-end="url(#arrowhead3)"/>
+                    
+                    <!-- Center text -->
+                    <text x="550" y="170" class="legend-text" font-weight="bold">uses</text>
+                    <text x="550" y="280" class="legend-text" font-weight="bold">uses</text>
+                    <text x="550" y="390" class="legend-text" font-weight="bold">uses</text>
+                    <text x="550" y="500" class="legend-text" font-weight="bold">uses</text>
+                    <text x="550" y="610" class="legend-text" font-weight="bold">uses</text>
+                </svg>
+            </div>
+        </div>
+        
+    </div>
+</body>
+</html>

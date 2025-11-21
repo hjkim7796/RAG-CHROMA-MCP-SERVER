@@ -38,7 +38,7 @@ mcp_server: Optional[Server] = None
 tools_list_handler = None
 call_tool_handler = None
 PERSIST_DIRECTORY = "./chroma_db"
-
+COLLECTION_NAME = "rag_documents"
 
 def initialize_vectorstore():
     """ChromaDB vectorstore 초기화"""
@@ -48,6 +48,7 @@ def initialize_vectorstore():
     
     embeddings = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2",
+        #model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
         model_kwargs={'device': 'cpu'},
         encode_kwargs={'normalize_embeddings': True}
     )
@@ -55,7 +56,7 @@ def initialize_vectorstore():
     vectorstore = Chroma(
         persist_directory=PERSIST_DIRECTORY,
         embedding_function=embeddings,
-        collection_name="rag_documents"
+        collection_name=COLLECTION_NAME
     )
     
     print("✅ Vectorstore initialized")
