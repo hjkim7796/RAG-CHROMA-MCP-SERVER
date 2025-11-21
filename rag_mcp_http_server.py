@@ -290,6 +290,12 @@ async def rag_query_handler(arguments: dict) -> list[TextContent]:
     if not question:
         return [TextContent(type="text", text="Error: No question provided")]
     
+    # question을 명시적으로 문자열로 변환
+    question = str(question).strip()
+    
+    if not question:
+        return [TextContent(type="text", text="Error: Empty question after processing")]
+    
     if anthropic_client is None:
         try:
             initialize_claude()
@@ -299,7 +305,11 @@ async def rag_query_handler(arguments: dict) -> list[TextContent]:
         if anthropic_client is None:
             return [TextContent(type="text", text="Error: ANTHROPIC_API_KEY not configured")]
     
-    relevant_docs = vectorstore.similarity_search(question, k=k)
+    try:
+        # similarity_search 호출 시 문자열 확인
+        relevant_docs = vectorstore.similarity_search(question, k=k)
+    except Exception as e:
+        return [TextContent(type="text", text=f"Error searching documents: {str(e)}\nQuestion type: {type(question)}\nQuestion: {question}")]
     
     if not relevant_docs:
         return [TextContent(type="text", text="❌ No relevant documents found in the database.")]
@@ -329,6 +339,7 @@ Question: {question}
 Please provide an accurate and detailed answer based on the information above."""
 
     try:
+        # Anthropic API는 content에 문자열을 직접 받을 수 있음
         message = anthropic_client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=2000,
