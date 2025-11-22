@@ -153,8 +153,8 @@ def initialize_mcp_server():
                         },
                         "language": {
                             "type": "string",
-                            "description": "Response language (ko/en, default: ko)",
-                            "default": "ko"
+                            "description": "Response language (en/ko, default: en)",
+                            "default": "en"
                         }
                     },
                     "required": ["question"]
@@ -285,7 +285,7 @@ async def rag_query_handler(arguments: dict) -> list[TextContent]:
     
     question = arguments.get("question", "")
     k = arguments.get("k", 4)
-    language = arguments.get("language", "ko")
+    language = arguments.get("language", "en")
     
     if not question:
         return [TextContent(type="text", text="Error: No question provided")]
